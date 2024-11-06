@@ -10,15 +10,6 @@ from miditok.pytorch_data import DataCollator, DatasetMIDI
 from torch.utils.data import DataLoader
 from miditok import REMI, TokenizerConfig
 
-@dataclass
-class ModelConfig:
-    vocab_size: int = -1
-    d_model: int = 128
-    n_head: int = 2
-    num_encoder_layers: int = 2
-    dim_feedforward: int = 128
-    batch_size: int = 32
-    max_seq_length: int = 512
 
 
 class DummyDecoder(nn.Module):
