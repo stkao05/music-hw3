@@ -2,14 +2,14 @@ import numpy as np
 from glob import glob
 import random, itertools
 import pickle
-import utils
+# import utils
 import pandas as pd
 import os
-import scipy.stats
+# import scipy.stats
 import tqdm
 from tqdm import tqdm
 import argparse
-from miditoolkit import MidiFile
+# from miditoolkit import MidiFile
 
 from musdr.side_utils import (
 #   get_event_seq, 
@@ -155,10 +155,12 @@ def compute_piece_groove_similarity(piece_ev_seq, bar_ev_id=BAR_EV, pos_evs=POS_
   return np.mean(grv_sims)
 
 
+"""
+PYTHONPATH="musdr" python tutorial/eval_metrics.py
+"""
 if __name__ == "__main__":
   # codes below are for testing
   test_pieces = sorted(glob(os.path.join(opt.output_file_path, '*.mid')))
-
   # print (test_pieces)
 
   result_dict = {
