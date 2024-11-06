@@ -1,11 +1,15 @@
 {
     "configurations": [
         {
-            "name": "Python Debugger: justmycode",
-            "type": "debugpy",
+            "name": "eval_metrics",
+            "type": "python",
             "request": "launch",
+            "program": "${workspaceFolder}/eval_metrics.py",
+            "args": ["--midi_dir=pop1k7/midi_analyzed/src_001"],
             "justMyCode": false,
-            "program": "${file}"
+            "env": {
+                "PYTHONPATH": "musdr"
+            }
         }
     ]
 }
