@@ -18,7 +18,7 @@ from transformers import GPT2Config, GPT2LMHeadModel
 @dataclass
 class ModelConfig:
     vocab_size: int = -1
-    d_model: int = 128
+    n_embd: int = 128
     n_head: int = 2
     n_layers: int = 2
     batch_size: int = 32
@@ -134,12 +134,12 @@ def split_training_set(midi_dir, config: ModelConfig, tokenizer):
     )
 
 
-# python main.py --device=cuda:7 --d_model=128 --n_head=2 --n_layers=2 --batch_size=32 --max_seq_length=1024
+# python main.py --device=cuda:7 --n_embd=128 --n_head=2 --n_layers=2 --batch_size=32 --max_seq_length=1024
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load a model checkpoint.")
     parser.add_argument("--cp", type=str)
     parser.add_argument("--device", type=str)
-    parser.add_argument("--d_model", type=int, default=128)
+    parser.add_argument("--n_embd", type=int, default=128)
     parser.add_argument("--n_head", type=int, default=2)
     parser.add_argument("--n_layers", type=int, default=2)
     parser.add_argument("--batch_size", type=int, default=32)
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     config = ModelConfig(
         device=device,
         vocab_size=tokenizer.vocab_size,
-        d_model=args.d_model,
+        n_embd=args.n_embd,
         n_head=args.n_head,
         n_layers=args.n_layers,
         batch_size=args.batch_size,
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     gpt_config = GPT2Config(
         vocab_size=config.vocab_size,
         n_positions=config.max_seq_length,
-        n_embd=config.d_model,
+        n_embd=config.n_embd,
         n_layer=config.n_layers,
         n_head=config.n_head,
         bos_token_id=tokenizer["BOS_None"],
