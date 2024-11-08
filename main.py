@@ -30,9 +30,9 @@ class ModelConfig:
     device: str = ""
 
 
-def train(model, optim, dataloader, ctriterion, epochs):
-    for epoch in range(epochs):
-        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch + 1}/{epochs}", leave=True)
+def train(model, optim, dataloader, ctriterion, config:ModelConfig):
+    for epoch in range(config.epochs):
+        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch + 1}/{config.epochs}", leave=True)
         epoch_loss = 0
 
         i = 0
@@ -40,8 +40,8 @@ def train(model, optim, dataloader, ctriterion, epochs):
             model.train()
             optim.zero_grad()
 
-            input_ids = data["input_ids"]
-            mask = data["attention_mask"]
+            input_ids = data["input_ids"].to(config.device)
+            mask = data["attention_mask"].to(config.device)
             out = model(input_ids, attention_mask=mask)
 
             shift_logits = out.logits[..., :-1, :].contiguous()
@@ -206,6 +206,6 @@ if __name__ == "__main__":
         optim=optim,
         dataloader=dataloader,
         ctriterion=ctriterion,
-        epochs=config.epoch,
+        config=config
     )
     wandb.finish()
