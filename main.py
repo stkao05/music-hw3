@@ -23,6 +23,7 @@ class ModelConfig:
     n_layers: int = 2
     batch_size: int = 32
     max_seq_length: int = 1024
+    max_sample_length: int = 3072
     split_midi_dir = Path("split")
     sample_dir = Path("samples")
     checkpoint_dir = Path("checkpoints")
@@ -89,10 +90,11 @@ def checkpoint_load(checkpoint_path, model, optim):
     print("load checkpoint", checkpoint_path)
 
 
+@torch.no_grad()
 def sample(model, config: ModelConfig, tokenizer, epoch):
     model.eval()
     save_path = config.sample_dir / f"sample_{epoch}.mid"
-    prompt = torch.tensor(
+    tokens = torch.tensor(
         [
             [
                 tokenizer.vocab["Bar_None"],
@@ -100,10 +102,22 @@ def sample(model, config: ModelConfig, tokenizer, epoch):
         ],
         device=config.device,
     )
-    attention_mask = torch.tensor([[True]], device=config.device)
-    tokens = model.generate(
-        prompt, attention_mask=attention_mask, max_length=config.max_seq_length * 10
-    )
+
+    while tokens.size(1) < config.max_sample_length:
+         # generate one token at a time
+        input_context = tokens[:, -(config.max_seq_length-1):]
+        output = model.generate(
+            input_context,
+            attention_mask=torch.ones(input_context.shape, device=config.device),
+            max_length=input_context.size(1) + 1,
+            do_sample=True,
+        )
+        new_token = output[:, -1:]
+        tokens = torch.cat((tokens, new_token), dim=1)
+        if new_token.item() == tokenizer["EOS_None"]:
+            break
+
+    print("sample token len", tokens.size(1))
     tokens = tokens.cpu()
     tokenizer.decode(tokens)
     score = tokenizer.decode(tokens)
