@@ -1,19 +1,18 @@
-from pathlib import Path
-import numpy as np
-import torch.nn as nn
-import torch
+import argparse
+import os
 from dataclasses import dataclass
 from pathlib import Path
-import os
+
 import miditok
+import numpy as np
+import torch
+import torch.nn as nn
+import wandb
 from miditok import REMI, TokenizerConfig
 from miditok.pytorch_data import DataCollator, DatasetMIDI
 from torch.utils.data import DataLoader
-from miditok import REMI, TokenizerConfig
-from transformers import GPT2Config, GPT2LMHeadModel
 from tqdm import tqdm
-import argparse
-import wandb
+from transformers import GPT2Config, GPT2LMHeadModel
 
 
 @dataclass
@@ -24,8 +23,7 @@ class ModelConfig:
     n_layers: int = 2
     batch_size: int = 32
     max_seq_length: int = 1024
-    # midi_dir = Path("pop1k7/midi_analyzed")
-    train_midi_dir = Path("split")
+    split_midi_dir = Path("split")
     sample_dir = Path("samples")
     checkpoint_dir = Path("checkpoints")
     epoch: int = 2
@@ -58,8 +56,8 @@ def train(model, optim, dataloader, ctriterion, epochs):
             epoch_loss += loss.item()
             progress_bar.set_postfix(loss=loss.item())
             i += 1
-            if i == 1:
-                break
+            # if i == 1:
+            #     break
 
         avg_epoch_loss = epoch_loss / len(dataloader)
         wandb.log({"loss": avg_epoch_loss})
@@ -109,15 +107,11 @@ def sample(model, config: ModelConfig, tokenizer, epoch):
     wandb.save(save_path)
 
 
-def split_training_set():
+def split_training_set(midi_dir, config: ModelConfig, tokenizer):
     miditok.utils.split_files_for_training(
-        list(
-            Path("/Users/stevenkao/workspace/music-hw-3/pop1k7/midi_analyzed").glob(
-                "**/*.mid"
-            )
-        ),
+        list(Path(midi_dir).glob("**/*.mid")),
         tokenizer,
-        save_dir=Path("split"),
+        save_dir=config.split_midi_dir,
         max_seq_len=config.max_seq_length,
     )
 
@@ -144,9 +138,14 @@ if __name__ == "__main__":
     os.makedirs(config.sample_dir, exist_ok=True)
     os.makedirs(config.checkpoint_dir, exist_ok=True)
 
+    # file split
+    # os.makedirs(config.split_midi_dir, exist_ok=True)
+    # split_training_set("/Users/stevenkao/workspace/music-hw-3/pop1k7/midi_analyzed", config, tokenizer)
+    # os._exit()
+
     # dataset setup
     dataset = DatasetMIDI(
-        files_paths=list(config.train_midi_dir.glob("**/*.mid")),
+        files_paths=list(config.split_midi_dir.glob("**/*.mid")),
         tokenizer=tokenizer,
         max_seq_len=config.max_seq_length,
         bos_token_id=tokenizer["BOS_None"],
