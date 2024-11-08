@@ -123,8 +123,23 @@ if __name__ == "__main__":
         type=str,
         help="Path to the checkpoint file. If not provided, the program will run without loading a checkpoint.",
     )
+    parser.add_argument(
+        "--device",
+        type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--debug",
+        type=bool,
+        default=False
+    )
     args = parser.parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    if torch.cuda.is_available():
+        print("available gpu num: ", torch.cuda.device_count())
+        device = torch.device(args.device)
+    else:
+        device = torch.device("cpu")
     print(f"using device: {device}")
 
     tkn_config = TokenizerConfig(
@@ -157,7 +172,7 @@ if __name__ == "__main__":
     # training setup
     wandb.init(project="pop-transformer", 
                config=config, 
-            #    mode="disabled"
+               mode="disabled" if args.debug else None
     )
     gpt_config = GPT2Config(
         vocab_size=config.vocab_size,
