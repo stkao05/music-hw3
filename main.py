@@ -146,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_seq_length", type=int, default=1024)
     parser.add_argument("--max_sample_length", type=int, default=3072)
     parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--split", type=str, default=False)
     parser.add_argument("--apikey", type=str)
     args = parser.parse_args()
 
@@ -177,10 +178,10 @@ if __name__ == "__main__":
     os.makedirs(config.sample_dir, exist_ok=True)
     os.makedirs(config.checkpoint_dir, exist_ok=True)
 
-    # file split
-    # os.makedirs(config.split_midi_dir, exist_ok=True)
-    # split_training_set("/Users/stevenkao/workspace/music-hw-3/pop1k7/midi_analyzed", config, tokenizer)
-    # os._exit()
+    if args.split:
+        os.makedirs(config.split_midi_dir, exist_ok=True)
+        split_training_set(args.split, config, tokenizer)
+        os._exit(1)
 
     # dataset setup
     dataset = DatasetMIDI(
