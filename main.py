@@ -103,6 +103,7 @@ def sample(model, config: ModelConfig, tokenizer, epoch):
     tokens = model.generate(
         prompt, attention_mask=attention_mask, max_length=config.max_seq_length
     )
+    tokens = tokens.cpu()
     tokenizer.decode(tokens)
     score = tokenizer.decode(tokens)
     score.dump_midi(save_path)
