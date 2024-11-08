@@ -118,21 +118,14 @@ def split_training_set(midi_dir, config: ModelConfig, tokenizer):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load a model checkpoint.")
-    parser.add_argument(
-        "--cp",
-        type=str,
-        help="Path to the checkpoint file. If not provided, the program will run without loading a checkpoint.",
-    )
-    parser.add_argument(
-        "--device",
-        type=str,
-        help="",
-    )
-    parser.add_argument(
-        "--debug",
-        type=bool,
-        default=False
-    )
+    parser.add_argument("--cp", type=str)
+    parser.add_argument("--device", type=str)
+    parser.add_argument("--d_model", type=int, default=128)
+    parser.add_argument("--n_head", type=int, default=2)
+    parser.add_argument("--n_layers", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--max_seq_length", type=int, default=1024)
+    parser.add_argument("--debug", type=bool, default=False)
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -148,7 +141,16 @@ if __name__ == "__main__":
         beat_res={(0, 4): 16, (4, 12): 8},
     )
     tokenizer = REMI(tkn_config)
-    config = ModelConfig(device=device, vocab_size=tokenizer.vocab_size)
+    config = ModelConfig(
+        device=device,
+        vocab_size=tokenizer.vocab_size,
+        d_model=args.d_model,
+        n_head=args.n_head,
+        n_layers=args.n_layers,
+        batch_size=args.batch_size,
+        max_seq_length=args.max_seq_length,
+    )
+    print(config)
 
     os.makedirs(config.sample_dir, exist_ok=True)
     os.makedirs(config.checkpoint_dir, exist_ok=True)
@@ -170,9 +172,10 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=config.batch_size, collate_fn=collator)
 
     # training setup
-    wandb.init(project="pop-transformer", 
-               config=config, 
-               mode="disabled" if args.debug else None
+    wandb.init(
+        project="pop-transformer",
+        config=config,
+        mode="disabled" if args.debug else None,
     )
     gpt_config = GPT2Config(
         vocab_size=config.vocab_size,
