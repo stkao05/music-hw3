@@ -16,6 +16,21 @@ import argparse
 import wandb
 
 
+@dataclass
+class ModelConfig:
+    vocab_size: int = -1
+    d_model: int = 128
+    n_head: int = 2
+    n_layers: int = 2
+    batch_size: int = 32
+    max_seq_length: int = 1024
+    # midi_dir = Path("pop1k7/midi_analyzed")
+    train_midi_dir = Path("split")
+    sample_dir = Path("samples")
+    checkpoint_dir = Path("checkpoints")
+    epoch: int = 2
+
+
 def train(model, optim, dataloader, ctriterion, epochs):
     model.train()
     for epoch in range(epochs):
@@ -42,18 +57,19 @@ def train(model, optim, dataloader, ctriterion, epochs):
             epoch_loss += loss.item()
             progress_bar.set_postfix(loss=loss.item())
             i += 1
-            if i == 20:
+            if i == 1:
                 break
 
         avg_epoch_loss = epoch_loss / len(dataloader)
         wandb.log({"loss": avg_epoch_loss})
-        checkpoint_save(model, optim, epoch, avg_epoch_loss)
+        checkpoint_save(model, optim, epoch, avg_epoch_loss, config)
         print(f"Epoch {epoch + 1} completed with average loss: {avg_epoch_loss:.4f}")
 
+        sample(model, config, tokenizer, epoch)
 
-def checkpoint_save(model, optim, epoch, loss):
-    os.makedirs("./checkpoints", exist_ok=True)
-    checkpoint_path = f"./checkpoints/cp_{epoch}.pt"
+
+def checkpoint_save(model, optim, epoch, loss, config: ModelConfig):
+    checkpoint_path = config.checkpoint_dir / f"cp_{epoch}.pt"
     torch.save(
         {
             "epoch": epoch,
@@ -63,6 +79,7 @@ def checkpoint_save(model, optim, epoch, loss):
         },
         checkpoint_path,
     )
+    wandb.save(checkpoint_path)
 
 
 def checkpoint_load(checkpoint_path, model, optim):
@@ -72,7 +89,8 @@ def checkpoint_load(checkpoint_path, model, optim):
     print("load checkpoint", checkpoint_path)
 
 
-def sample(model, config, tokenizer, save_path):
+def sample(model, config: ModelConfig, tokenizer, epoch):
+    save_path = config.sample_dir / f"sample_{epoch}.mid"
     prompt = torch.tensor(
         [
             [
@@ -80,10 +98,14 @@ def sample(model, config, tokenizer, save_path):
             ]
         ]
     )
-    tokens = model.generate(prompt, max_length=config.max_seq_length)
+    attention_mask = torch.tensor([[True]])
+    tokens = model.generate(
+        prompt, attention_mask=attention_mask, max_length=config.max_seq_length
+    )
     tokenizer.decode(tokens)
     score = tokenizer.decode(tokens)
     score.dump_midi(save_path)
+    wandb.save(save_path)
 
 
 def split_training_set():
@@ -100,23 +122,13 @@ def split_training_set():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="")
+    parser = argparse.ArgumentParser(description="Load a model checkpoint.")
     parser.add_argument(
-        "cp", type=str, required=False, help="Path to the checkpoint file."
+        "--cp",
+        type=str,
+        help="Path to the checkpoint file. If not provided, the program will run without loading a checkpoint.",
     )
     args = parser.parse_args()
-
-    @dataclass
-    class ModelConfig:
-        vocab_size: int = -1
-        d_model: int = 128
-        n_head: int = 2
-        n_layers: int = 2
-        batch_size: int = 32
-        max_seq_length: int = 1024
-        # midi_dir = Path("pop1k7/midi_analyzed")
-        train_midi_dir = Path("split")
-        epoch: int = 10
 
     config = ModelConfig()
     tkn_config = TokenizerConfig(
@@ -126,6 +138,9 @@ if __name__ == "__main__":
     )
     tokenizer = REMI(tkn_config)
     config.vocab_size = tokenizer.vocab_size
+
+    os.makedirs(config.sample_dir, exist_ok=True)
+    os.makedirs(config.checkpoint_dir, exist_ok=True)
 
     # dataset setup
     dataset = DatasetMIDI(
@@ -150,9 +165,17 @@ if __name__ == "__main__":
         eos_token_id=tokenizer["EOS_None"],
     )
     model = GPT2LMHeadModel(gpt_config)
+    model.generation_config.pad_token_id = tokenizer["PAD_None"]
+
     optim = torch.optim.Adam(model.parameters())
     ctriterion = nn.CrossEntropyLoss(ignore_index=tokenizer["PAD_None"])
     if args.cp:
         checkpoint_load(args.cp, model, optim)
 
-    train(model, optim=optim, dataloader=dataloader, ctriterion=ctriterion, epochs=2)
+    train(
+        model,
+        optim=optim,
+        dataloader=dataloader,
+        ctriterion=ctriterion,
+        epochs=config.epoch,
+    )
