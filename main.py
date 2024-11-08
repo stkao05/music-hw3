@@ -26,7 +26,7 @@ class ModelConfig:
     split_midi_dir = Path("split")
     sample_dir = Path("samples")
     checkpoint_dir = Path("checkpoints")
-    epoch: int = 2
+    epoch: int = 1
     device: str = ""
 
 
