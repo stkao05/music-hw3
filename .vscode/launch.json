@@ -1,11 +1,11 @@
 {
     "configurations": [
+
         {
             "name": "eval_metrics",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/eval_metrics.py",
-            "args": ["--midi_dir=pop1k7/midi_analyzed/src_001"],
+            "program": "${file}",
             "justMyCode": false,
             "env": {
                 "PYTHONPATH": "musdr"
