@@ -102,7 +102,7 @@ def sample(model, config: ModelConfig, tokenizer, epoch):
     )
     attention_mask = torch.tensor([[True]], device=config.device)
     tokens = model.generate(
-        prompt, attention_mask=attention_mask, max_length=config.max_seq_length
+        prompt, attention_mask=attention_mask, max_length=config.max_seq_length * 10
     )
     tokens = tokens.cpu()
     tokenizer.decode(tokens)
