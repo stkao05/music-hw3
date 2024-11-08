@@ -31,13 +31,13 @@ class ModelConfig:
 
 
 def train(model, optim, dataloader, ctriterion, epochs):
-    model.train()
     for epoch in range(epochs):
         progress_bar = tqdm(dataloader, desc=f"Epoch {epoch + 1}/{epochs}", leave=True)
         epoch_loss = 0
 
         i = 0
         for data in progress_bar:
+            model.train()
             optim.zero_grad()
 
             input_ids = data["input_ids"]
@@ -89,15 +89,17 @@ def checkpoint_load(checkpoint_path, model, optim):
 
 
 def sample(model, config: ModelConfig, tokenizer, epoch):
+    model.eval()
     save_path = config.sample_dir / f"sample_{epoch}.mid"
     prompt = torch.tensor(
         [
             [
                 tokenizer.vocab["Bar_None"],
             ]
-        ]
+        ],
+        device=config.device
     )
-    attention_mask = torch.tensor([[True]])
+    attention_mask = torch.tensor([[True]], device=config.device)
     tokens = model.generate(
         prompt, attention_mask=attention_mask, max_length=config.max_seq_length
     )
@@ -188,6 +190,8 @@ if __name__ == "__main__":
     )
     model = GPT2LMHeadModel(gpt_config)
     model.generation_config.pad_token_id = tokenizer["PAD_None"]
+    model.to(device)
+    print(f"model parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     optim = torch.optim.Adam(model.parameters())
     ctriterion = nn.CrossEntropyLoss(ignore_index=tokenizer["PAD_None"])
