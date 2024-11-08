@@ -29,6 +29,7 @@ class ModelConfig:
     sample_dir = Path("samples")
     checkpoint_dir = Path("checkpoints")
     epoch: int = 2
+    device: str = ""
 
 
 def train(model, optim, dataloader, ctriterion, epochs):
@@ -129,15 +130,16 @@ if __name__ == "__main__":
         help="Path to the checkpoint file. If not provided, the program will run without loading a checkpoint.",
     )
     args = parser.parse_args()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"using device: {device}")
 
-    config = ModelConfig()
     tkn_config = TokenizerConfig(
         use_tempos=True,
         use_pitchdrum_tokens=False,
         beat_res={(0, 4): 16, (4, 12): 8},
     )
     tokenizer = REMI(tkn_config)
-    config.vocab_size = tokenizer.vocab_size
+    config = ModelConfig(device=device, vocab_size=tokenizer.vocab_size)
 
     os.makedirs(config.sample_dir, exist_ok=True)
     os.makedirs(config.checkpoint_dir, exist_ok=True)
