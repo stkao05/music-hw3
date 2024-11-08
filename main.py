@@ -26,7 +26,7 @@ class ModelConfig:
     split_midi_dir = Path("split")
     sample_dir = Path("samples")
     checkpoint_dir = Path("checkpoints")
-    epoch: int = 1
+    epoch: int = 100
     device: str = ""
 
 
@@ -55,7 +55,7 @@ def train(model, optim, dataloader, ctriterion, epochs):
 
             epoch_loss += loss.item()
             progress_bar.set_postfix(loss=loss.item())
-            i += 1
+            # i += 1
             # if i == 1:
             #     break
 
@@ -155,7 +155,10 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=config.batch_size, collate_fn=collator)
 
     # training setup
-    wandb.init(project="pop-transformer", config=config, mode="disabled")
+    wandb.init(project="pop-transformer", 
+               config=config, 
+            #    mode="disabled"
+    )
     gpt_config = GPT2Config(
         vocab_size=config.vocab_size,
         n_positions=config.max_seq_length,
@@ -180,3 +183,4 @@ if __name__ == "__main__":
         ctriterion=ctriterion,
         epochs=config.epoch,
     )
+    wandb.finish()
