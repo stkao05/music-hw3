@@ -97,7 +97,7 @@ def sample(model, config: ModelConfig, tokenizer, epoch):
                 tokenizer.vocab["Bar_None"],
             ]
         ],
-        device=config.device
+        device=config.device,
     )
     attention_mask = torch.tensor([[True]], device=config.device)
     tokens = model.generate(
@@ -118,6 +118,7 @@ def split_training_set(midi_dir, config: ModelConfig, tokenizer):
     )
 
 
+# python main.py --device=cuda:7 --d_model=128 --n_head=2 --n_layers=2 --batch_size=32 --max_seq_length=1024
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load a model checkpoint.")
     parser.add_argument("--cp", type=str)
@@ -171,7 +172,9 @@ if __name__ == "__main__":
         eos_token_id=tokenizer["EOS_None"],
     )
     collator = DataCollator(tokenizer.pad_token_id)
-    dataloader = DataLoader(dataset, batch_size=config.batch_size, collate_fn=collator)
+    dataloader = DataLoader(
+        dataset, batch_size=config.batch_size, collate_fn=collator, shuffle=True
+    )
 
     # training setup
     wandb.init(
