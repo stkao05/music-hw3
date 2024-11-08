@@ -28,6 +28,7 @@ class ModelConfig:
     sample_dir = Path("samples")
     checkpoint_dir = Path("checkpoints")
     epochs: int = 100
+    log_freq: int = 50
     device: str = ""
     debug: bool = False
 
@@ -57,12 +58,16 @@ def train(model, optim, dataloader, ctriterion, config:ModelConfig):
 
             epoch_loss += loss.item()
             progress_bar.set_postfix(loss=loss.item())
-            i += 1
+
+            if i % config.log_freq == 0:
+                wandb.log({"loss": loss.item()})
+
             if i == 1 and config.debug:
                 break
 
+            i += 1
+
         avg_epoch_loss = epoch_loss / len(dataloader)
-        wandb.log({"loss": avg_epoch_loss})
         checkpoint_save(model, optim, epoch, avg_epoch_loss, config)
         print(f"Epoch {epoch + 1} completed with average loss: {avg_epoch_loss:.4f}")
 
@@ -148,6 +153,7 @@ if __name__ == "__main__":
     parser.add_argument("--debug", type=bool, default=False)
     parser.add_argument("--split", type=str, default=False)
     parser.add_argument("--apikey", type=str)
+    parser.add_argument("--log_freq", type=int, default=50)
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -171,7 +177,8 @@ if __name__ == "__main__":
         n_layers=args.n_layers,
         batch_size=args.batch_size,
         max_seq_length=args.max_seq_length,
-        debug=args.debug
+        debug=args.debug,
+        log_freq=args.log_freq
     )
     print(config)
 
