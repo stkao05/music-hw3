@@ -144,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_layers", type=int, default=2)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--max_seq_length", type=int, default=1024)
+    parser.add_argument("--max_sample_length", type=int, default=3072)
     parser.add_argument("--debug", type=bool, default=False)
     parser.add_argument("--apikey", type=str)
     args = parser.parse_args()
