@@ -28,6 +28,7 @@ class ModelConfig:
     checkpoint_dir = Path("checkpoints")
     epochs: int = 100
     device: str = ""
+    debug: bool = False
 
 
 def train(model, optim, dataloader, ctriterion, config:ModelConfig):
@@ -55,9 +56,9 @@ def train(model, optim, dataloader, ctriterion, config:ModelConfig):
 
             epoch_loss += loss.item()
             progress_bar.set_postfix(loss=loss.item())
-            # i += 1
-            # if i == 1:
-            #     break
+            i += 1
+            if i == 1 and config.debug:
+                break
 
         avg_epoch_loss = epoch_loss / len(dataloader)
         wandb.log({"loss": avg_epoch_loss})
@@ -130,6 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--max_seq_length", type=int, default=1024)
     parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--apikey", type=str)
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -153,6 +155,7 @@ if __name__ == "__main__":
         n_layers=args.n_layers,
         batch_size=args.batch_size,
         max_seq_length=args.max_seq_length,
+        debug=args.debug
     )
     print(config)
 
@@ -178,10 +181,13 @@ if __name__ == "__main__":
     )
 
     # training setup
+    if args.apikey:
+        wandb.login(key=args.apikey)
+
     wandb.init(
         project="pop-transformer",
         config=config,
-        mode="disabled" if args.debug else None,
+        mode=None if args.apikey else "disabled",
     )
     gpt_config = GPT2Config(
         vocab_size=config.vocab_size,
