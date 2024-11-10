@@ -120,7 +120,7 @@ def main(**args):
     run_exp("beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
 
 
-# python sample.py --cp="checkpoints/cp_82.pt" --sample_size=2
+# python sample.py --cp=checkpoints/cp_82.pt --sample_size=4 --sample_len=64 --out_dir=sample_out
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load a model checkpoint.")
     parser.add_argument("--cp", type=str, default="./")
