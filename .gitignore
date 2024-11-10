@@ -7,3 +7,4 @@ checkpoints
 samples
 wandb
 .DS_Store
+sample_out

@@ -4,10 +4,11 @@ import os
 import random
 from glob import glob
 
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import tqdm
-from miditok import REMI, TokenizerConfig
+from miditok import REMI, TokenizerConfig, MusicTokenizer
 from tqdm import tqdm
 
 from musdr.side_utils import (
@@ -113,20 +114,12 @@ def compute_piece_groove_similarity(
     return np.mean(grv_sims)
 
 
-"""
-PYTHONPATH="musdr" python eval_metrics.py --midi_dir=pop1k7/midi_analyzed/src_001
-"""
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--midi_dir", type=str, help="", required=True)
-    opt = parser.parse_args()
-
-    tokenizer = REMI(TokenizerConfig())
+def eval_dir(midi_dir: str, tokenizer: MusicTokenizer, result_path: str):
     bar_id = tokenizer["Bar_None"]
     pos_ids = [v for k, v in tokenizer.vocab.items() if "Position" in k]
     pitch_ids = [v for k, v in tokenizer.vocab.items() if "Pitch_" in k]
 
-    test_pieces = sorted(glob(os.path.join(opt.midi_dir, "*.mid")))
+    test_pieces = sorted(glob(os.path.join(midi_dir, "*.mid")))
     result_dict = {"piece_name": [], "H1": [], "H4": [], "GS": []}
 
     for p in tqdm(test_pieces):
@@ -150,4 +143,56 @@ if __name__ == "__main__":
 
     if len(result_dict):
         df = pd.DataFrame.from_dict(result_dict)
-        df.to_csv("pop1k7.csv", index=False, encoding="utf-8")
+        df.to_csv(result_path, index=False, encoding="utf-8")
+
+    def filter(arr):
+        return [x for x in arr if x is not None and not np.isnan(x)]
+    
+    return {
+        "H1": np.mean(filter(result_dict["H1"])).item(),
+        "H4": np.mean(filter(result_dict["H4"])).item(),
+        "GS": np.mean(filter(result_dict["GS"])).item()
+    }
+
+
+"""
+PYTHONPATH="musdr" python eval_metrics.py --midi_dir=pop1k7/midi_analyzed/src_001
+"""
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--midi_dir", type=str, help="", required=True)
+    args = parser.parse_args()
+
+    tokenizer = REMI(TokenizerConfig())
+    eval_dir(args.midi_dir, tokenizer)
+
+    # tokenizer = REMI(TokenizerConfig())
+    # bar_id = tokenizer["Bar_None"]
+    # pos_ids = [v for k, v in tokenizer.vocab.items() if "Position" in k]
+    # pitch_ids = [v for k, v in tokenizer.vocab.items() if "Pitch_" in k]
+
+    # test_pieces = sorted(glob(os.path.join(args.midi_dir, "*.mid")))
+    # result_dict = {"piece_name": [], "H1": [], "H4": [], "GS": []}
+
+    # for p in tqdm(test_pieces):
+    #     result_dict["piece_name"].append(p.replace("\\", "/").split("/")[-1])
+    #     tokens = tokenizer.encode(p)
+    #     # encode output list of miditok.TokSequence for multi-track
+    #     tokens = list(tokens[0])
+
+    #     h1 = compute_piece_pitch_entropy(
+    #         tokens, 1, bar_ev_id=bar_id, pitch_evs=pitch_ids, verbose=False
+    #     )
+    #     result_dict["H1"].append(h1)
+    #     h4 = compute_piece_pitch_entropy(
+    #         tokens, 4, bar_ev_id=bar_id, pitch_evs=pitch_ids, verbose=False
+    #     )
+    #     result_dict["H4"].append(h4)
+    #     gs = compute_piece_groove_similarity(
+    #         tokens, bar_ev_id=bar_id, pos_evs=pos_ids, pitch_evs=pitch_ids
+    #     )
+    #     result_dict["GS"].append(gs)
+
+    # if len(result_dict):
+    #     df = pd.DataFrame.from_dict(result_dict)
+    #     df.to_csv("pop1k7.csv", index=False, encoding="utf-8")
