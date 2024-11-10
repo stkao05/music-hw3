@@ -17,6 +17,7 @@ from main import ModelConfig, checkpoint_load
 
 def sample(
     sample_size: int,
+    batch_size: int,
     config: ModelConfig,
     out_dir: str,
     model,
@@ -26,37 +27,38 @@ def sample(
     sample_dir = Path(out_dir)
     os.makedirs(sample_dir, exist_ok=True)
 
-    tokens = torch.tensor(
-        [[tokenizer.vocab["Bar_None"]]] * sample_size,
-        device=config.device,
-    )  # (batch_n, seq_n)
+    iter_num = sample_size // batch_size
+    for i in range(iter_num):
+        tokens = torch.tensor(
+            [[tokenizer.vocab["Bar_None"]]] * batch_size,
+            device=config.device,
+        )  # (batch_n, seq_n)
 
-    with tqdm(
-        total=config.max_sample_length, desc="Generating tokens", unit="token"
-    ) as pbar:
-        while tokens.size(1) < config.max_sample_length:
-            # Generate one token at a time
-            input_context = tokens[:, -(config.max_seq_length - 1) :]
-            output = model.generate(
-                input_context,
-                attention_mask=torch.ones(input_context.shape, device=config.device),
-                generation_config=gen_config,
-                max_length=input_context.size(1) + 1,
-            )
-            new_token = output[:, -1:]
-            tokens = torch.cat((tokens, new_token), dim=1)
-            pbar.update(1)
+        with tqdm(
+            total=config.max_sample_length, desc="Generating tokens", unit="token"
+        ) as pbar:
+            while tokens.size(1) < config.max_sample_length:
+                # Generate one token at a time
+                input_context = tokens[:, -(config.max_seq_length - 1) :]
+                output = model.generate(
+                    input_context,
+                    attention_mask=torch.ones(input_context.shape, device=config.device),
+                    generation_config=gen_config,
+                    max_length=input_context.size(1) + 1,
+                )
+                new_token = output[:, -1:]
+                tokens = torch.cat((tokens, new_token), dim=1)
+                pbar.update(1)
 
-            # check if all batch has ended
-            all_end = (tokens == tokenizer["EOS_None"]).any(dim=1).all()
-            if all_end:
-                break
+                # check if all batch has ended
+                all_end = (tokens == tokenizer["EOS_None"]).any(dim=1).all()
+                if all_end:
+                    break
 
-    # print("sample token len", tokens.size(1))
-    tokens = tokens.cpu()
-    for i in range(tokens.size(0)):
-        score = tokenizer.decode(tokens[i : i + 1, :])
-        score.dump_midi(sample_dir / f"{i}.mid")
+        tokens = tokens.cpu()
+        for i in range(tokens.size(0)):
+            score = tokenizer.decode(tokens[i : i + 1, :])
+            score.dump_midi(sample_dir / f"{iter_num * batch_size + i}.mid")
 
     print("evaluating", sample_dir)
     eval_result = eval_dir(
@@ -111,7 +113,7 @@ def main(**args):
         print(f"config: {name}")
         out_dir = Path(args["out_dir"]) / name
         sample(
-            args["sample_size"], config, out_dir, model, tokenizer, gen_config
+            args["sample_size"], args["batch_size"], config, out_dir, model, tokenizer, gen_config
         )
 
     run_exp("greedy", GenerationConfig(num_beams=1, do_sample=False))
@@ -126,6 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("--cp", type=str, default="./")
     parser.add_argument("--device", type=str)
     parser.add_argument("--sample_size", type=int)
+    parser.add_argument("--batch_size", type=int)
     parser.add_argument("--sample_len", type=int)
     parser.add_argument("--out_dir", type=str)
     args = parser.parse_args()
