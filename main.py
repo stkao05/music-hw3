@@ -88,10 +88,11 @@ def checkpoint_save(model, optim, epoch, loss, config: ModelConfig):
     wandb.save(checkpoint_path)
 
 
-def checkpoint_load(checkpoint_path, model, optim):
-    checkpoint = torch.load(checkpoint_path)
+def checkpoint_load(checkpoint_path, model, config: ModelConfig, optim = None):
+    checkpoint = torch.load(checkpoint_path, weights_only=True, map_location=torch.device(config.device))
     model.load_state_dict(checkpoint["model_state_dict"])
-    optim.load_state_dict(checkpoint["optimizer_state_dict"])
+    if optim:
+        optim.load_state_dict(checkpoint["optimizer_state_dict"])
     print("load checkpoint", checkpoint_path)
 
 

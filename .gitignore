@@ -6,3 +6,4 @@ split
 checkpoints
 samples
 wandb
+.DS_Store
