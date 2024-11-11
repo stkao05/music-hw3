@@ -1,3 +1,4 @@
+# %% 
 import argparse
 import sys
 
@@ -23,26 +24,36 @@ def sample(
     model,
     tokenizer: REMI,
     gen_config: GenerationConfig,
+    prompt,
 ):
     sample_dir = Path(out_dir)
     os.makedirs(sample_dir, exist_ok=True)
 
     iter_num = sample_size // batch_size
     for i in range(iter_num):
-        tokens = torch.tensor(
-            [[tokenizer.vocab["Bar_None"]]] * batch_size,
-            device=config.device,
-        )  # (batch_n, seq_n)
+        if prompt:
+            tokens = torch.tensor(
+                [prompt] * batch_size,
+                device=config.device,
+            )  # (batch_n, seq_n)
+        else:
+            tokens = torch.tensor(
+                [[tokenizer.vocab["Bar_None"]]] * batch_size,
+                device=config.device,
+            )  # (batch_n, seq_n)
 
         with tqdm(
             total=config.max_sample_length, desc="Generating tokens", unit="token"
         ) as pbar:
+            pbar.update(tokens.size(1))
             while tokens.size(1) < config.max_sample_length:
                 # Generate one token at a time
                 input_context = tokens[:, -(config.max_seq_length - 1) :]
                 output = model.generate(
                     input_context,
-                    attention_mask=torch.ones(input_context.shape, device=config.device),
+                    attention_mask=torch.ones(
+                        input_context.shape, device=config.device
+                    ),
                     generation_config=gen_config,
                     max_length=input_context.size(1) + 1,
                 )
@@ -113,14 +124,53 @@ def main(**args):
         print(f"config: {name}")
         out_dir = Path(args["out_dir"]) / name
         sample(
-            args["sample_size"], args["batch_size"], config, out_dir, model, tokenizer, gen_config
+            args["sample_size"],
+            args["batch_size"],
+            config,
+            out_dir,
+            model,
+            tokenizer,
+            gen_config,
         )
 
-    run_exp("greedy", GenerationConfig(num_beams=1, do_sample=False))
-    run_exp("multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
-    run_exp("multinomial_sampling_temp", GenerationConfig(num_beams=1, do_sample=True, temperature=1.5))
-    run_exp("beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    # run_exp("greedy", GenerationConfig(num_beams=1, do_sample=False))
+    # run_exp("multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    # run_exp(
+    #     "multinomial_sampling_temp",
+    #     GenerationConfig(num_beams=1, do_sample=True, temperature=1.5),
+    # )
+    # run_exp(
+    #     "beam-search_multinomial_sampling",
+    #     GenerationConfig(num_beams=5, do_sample=True),
+    # )
 
+    def sample_prompt(name):
+        print("promp:", name)
+        path = Path("./prompt_song") / (name + ".mid")
+        prompt = tokenizer.encode(path)[0]
+        out_dir = Path(args["out_dir"]) / name
+        sample(
+            args["sample_size"],
+            args["batch_size"],
+            config,
+            out_dir,
+            model,
+            tokenizer,
+            GenerationConfig(num_beams=5, do_sample=True),
+            prompt
+        )
+
+    sample_prompt("song_1")
+    sample_prompt("song_2")
+    sample_prompt("song_3")
+    # tokens = tokenizer.encode("prompt_song/song_1.mid")[0]
+    # print(len(tokens))
+
+
+
+# main(cp="checkpoints/cp_82.pt", sample_size=4, batch_size=4, sample_len=3072, out_dir="sample_out")
+
+# %% 
 
 # python sample.py --cp=checkpoints/cp_82.pt --sample_size=4 --sample_len=64 --out_dir=sample_out
 if __name__ == "__main__":
