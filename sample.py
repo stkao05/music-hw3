@@ -148,7 +148,7 @@ def main(**args):
         print("promp and config:", promp_name, config_name)
         path = Path("./prompt_song") / (promp_name + ".mid")
         prompt = tokenizer.encode(path)[0]
-        out_dir = Path(args["out_dir"]) / promp_name + "_" + config_name
+        out_dir = Path(args["out_dir"]) / (promp_name + "_" + config_name)
         sample(
             args["sample_size"],
             args["batch_size"],
