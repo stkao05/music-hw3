@@ -144,11 +144,11 @@ def main(**args):
     #     GenerationConfig(num_beams=5, do_sample=True),
     # )
 
-    def sample_prompt(name):
-        print("promp:", name)
-        path = Path("./prompt_song") / (name + ".mid")
+    def sample_prompt(promp_name, config_name, gen_config):
+        print("promp and config:", promp_name, config_name)
+        path = Path("./prompt_song") / (promp_name + ".mid")
         prompt = tokenizer.encode(path)[0]
-        out_dir = Path(args["out_dir"]) / name
+        out_dir = Path(args["out_dir"]) / promp_name + "_" + config_name
         sample(
             args["sample_size"],
             args["batch_size"],
@@ -156,13 +156,15 @@ def main(**args):
             out_dir,
             model,
             tokenizer,
-            GenerationConfig(num_beams=5, do_sample=True),
+            gen_config,
             prompt
         )
 
-    sample_prompt("song_1")
-    sample_prompt("song_2")
-    sample_prompt("song_3")
+    sample_prompt("song_1", "greedy", GenerationConfig(num_beams=1, do_sample=False))
+    sample_prompt("song_1", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    sample_prompt("song_1", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    # sample_prompt("song_2")
+    # sample_prompt("song_3")
     # tokens = tokenizer.encode("prompt_song/song_1.mid")[0]
     # print(len(tokens))
 
