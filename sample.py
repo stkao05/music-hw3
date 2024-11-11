@@ -163,6 +163,12 @@ def main(**args):
     sample_prompt("song_1", "greedy", GenerationConfig(num_beams=1, do_sample=False))
     sample_prompt("song_1", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
     sample_prompt("song_1", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    sample_prompt("song_2", "greedy", GenerationConfig(num_beams=1, do_sample=False))
+    sample_prompt("song_2", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    sample_prompt("song_2", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    sample_prompt("song_3", "greedy", GenerationConfig(num_beams=1, do_sample=False))
+    sample_prompt("song_3", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    sample_prompt("song_3", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
     # sample_prompt("song_2")
     # sample_prompt("song_3")
     # tokens = tokenizer.encode("prompt_song/song_1.mid")[0]
