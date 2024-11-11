@@ -24,13 +24,13 @@ def sample(
     model,
     tokenizer: REMI,
     gen_config: GenerationConfig,
-    prompt,
+    prompt=None,
 ):
     sample_dir = Path(out_dir)
     os.makedirs(sample_dir, exist_ok=True)
 
     iter_num = sample_size // batch_size
-    for i in range(iter_num):
+    for iter_i in range(iter_num):
         if prompt:
             tokens = torch.tensor(
                 [prompt] * batch_size,
@@ -69,7 +69,8 @@ def sample(
         tokens = tokens.cpu()
         for i in range(tokens.size(0)):
             score = tokenizer.decode(tokens[i : i + 1, :])
-            score.dump_midi(sample_dir / f"{iter_num * batch_size + i}.mid")
+            name = iter_i * batch_size + i
+            score.dump_midi(sample_dir / f"{name}.mid")
 
     print("evaluating", sample_dir)
     eval_result = eval_dir(
@@ -139,10 +140,10 @@ def main(**args):
     #     "multinomial_sampling_temp",
     #     GenerationConfig(num_beams=1, do_sample=True, temperature=1.5),
     # )
-    # run_exp(
-    #     "beam-search_multinomial_sampling",
-    #     GenerationConfig(num_beams=5, do_sample=True),
-    # )
+    run_exp(
+        "beam-search_multinomial_sampling",
+        GenerationConfig(num_beams=5, do_sample=True),
+    )
 
     def sample_prompt(promp_name, config_name, gen_config):
         print("promp and config:", promp_name, config_name)
@@ -160,15 +161,15 @@ def main(**args):
             prompt
         )
 
-    sample_prompt("song_1", "greedy", GenerationConfig(num_beams=1, do_sample=False))
-    sample_prompt("song_1", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
-    sample_prompt("song_1", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
-    sample_prompt("song_2", "greedy", GenerationConfig(num_beams=1, do_sample=False))
-    sample_prompt("song_2", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
-    sample_prompt("song_2", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
-    sample_prompt("song_3", "greedy", GenerationConfig(num_beams=1, do_sample=False))
-    sample_prompt("song_3", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
-    sample_prompt("song_3", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    # sample_prompt("song_1", "greedy", GenerationConfig(num_beams=1, do_sample=False))
+    # sample_prompt("song_1", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    # sample_prompt("song_1", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    # sample_prompt("song_2", "greedy", GenerationConfig(num_beams=1, do_sample=False))
+    # sample_prompt("song_2", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    # sample_prompt("song_2", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
+    # sample_prompt("song_3", "greedy", GenerationConfig(num_beams=1, do_sample=False))
+    # sample_prompt("song_3", "multinomial_sampling", GenerationConfig(num_beams=1, do_sample=True))
+    # sample_prompt("song_3", "beam-search_multinomial_sampling", GenerationConfig(num_beams=5, do_sample=True))
     # sample_prompt("song_2")
     # sample_prompt("song_3")
     # tokens = tokenizer.encode("prompt_song/song_1.mid")[0]
@@ -176,7 +177,7 @@ def main(**args):
 
 
 
-# main(cp="checkpoints/cp_82.pt", sample_size=4, batch_size=4, sample_len=3072, out_dir="sample_out")
+main(cp="checkpoints/cp_82.pt", sample_size=8, batch_size=2, sample_len=127, out_dir="sample_out")
 
 # %% 
 
